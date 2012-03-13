@@ -20,8 +20,10 @@ The following modifications were made to the original LookupService class:
 
 ## Usage
 
-    FastLookupService geo = new FastLookupService("/path/to/db", FastLookupService.GEOIP_MEMORY_CACHE);
-    Country country = geo.getCountry("4.2.2.2");
+```java
+FastLookupService geo = new FastLookupService("/path/to/db", FastLookupService.GEOIP_MEMORY_CACHE);
+Country country = geo.getCountry("4.2.2.2");
 
-    // or, for faster access to the country code (no object creation!)
-    String countryCode = geo.getCountryCode("4.2.2.2");
+// or, for faster access to the country code (no object creation!)
+String countryCode = geo.getCountryCode("4.2.2.2");
+```
