@@ -473,7 +473,7 @@ public class FastLookupService {
      * @param ipAddress the IP address.
      * @return the country the IP address is from.
      */
-    public synchronized Country getCountry(InetAddress ipAddress) {
+    public Country getCountry(InetAddress ipAddress) {
         return getCountry(bytesToLong(ipAddress.getAddress()));
     }
 
