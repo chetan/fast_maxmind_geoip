@@ -17,14 +17,13 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
 package com.maxmind.geoip;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.net.InetAddress;
 import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -34,6 +33,11 @@ import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
+
+import com.maxmind.geoip.Country;
+import com.maxmind.geoip.DatabaseInfo;
+import com.maxmind.geoip.Location;
+import com.maxmind.geoip.Region;
 
 /**
  * Provides a lookup service for information based on an IP address. The location of
@@ -125,6 +129,9 @@ public class FastLookupService {
     private final static int FULL_RECORD_LENGTH = 60;
 
     private final Country UNKNOWN_COUNTRY = new Country("--", "N/A");
+    private static final String UNKNOWN_COUNTRY_CODE = "--";
+
+    private static final char DOT = '.';
 
     private static final HashMap hashmapcountryCodetoindex = new HashMap(512);
     private static final HashMap hashmapcountryNametoindex = new HashMap(512);
@@ -401,8 +408,8 @@ public class FastLookupService {
             index_cache = new byte[l];
             if (index_cache != null){
                 file.seek(0);
-                file.readFully(index_cache,0,l);     
-            }          
+                file.readFully(index_cache,0,l);
+            }
         } else {
             index_cache = null;
         }
@@ -446,14 +453,18 @@ public class FastLookupService {
      * @return the country the IP address is from.
      */
     public Country getCountry(String ipAddress) {
-        InetAddress addr;
-        try {
-            addr = InetAddress.getByName(ipAddress);
-        }
-        catch (UnknownHostException e) {
-            return UNKNOWN_COUNTRY;
-        }
-        return getCountry(bytesToLong(addr.getAddress()));
+        return getCountry(ipToLong(ipAddress));
+    }
+
+    /**
+     * Returns the country code the IP address is in.
+     *
+     * @param ipAddress String version of an IP address, i.e. "127.0.0.1"
+     * @return the 2 letter country code
+     */
+    public String getCountryCode(String ipAddress) {
+        int ret = seekCountry(ipToLong(ipAddress)) - COUNTRY_BEGIN;
+        return (ret == 0 ? UNKNOWN_COUNTRY_CODE : countryCode[ret]);
     }
 
     /**
@@ -528,7 +539,7 @@ public class FastLookupService {
     }
 
     public int last_netmask() {
-        return this.last_netmask; 
+        return this.last_netmask;
     }
 
     public void netmask(int nm){
@@ -671,7 +682,7 @@ public class FastLookupService {
         Location record = new Location();
         String key;
         String value;
-        StringTokenizer st = new StringTokenizer(str,";=\""); 
+        StringTokenizer st = new StringTokenizer(str,";=\"");
         while (st.hasMoreTokens()) {
             key = st.nextToken();
             if (st.hasMoreTokens()) {
@@ -1089,9 +1100,9 @@ public class FastLookupService {
                 //read from index cache
                 for (int i = 0;i < 2 * MAX_RECORD_LENGTH;i++) {
                     buf[i] = index_cache[(2 * recordLength * offset)+i];
-                }            
+                }
             } else {
-                //read from disk 
+                //read from disk
                 try {
                     file.seek(2 * recordLength * offset);
                     file.readFully(buf);
@@ -1140,38 +1151,24 @@ public class FastLookupService {
      * @param ipAddress the ip address to find in long format.
      * @return the country index.
      */
-    private synchronized int seekCountry(long ipAddress) {
-        byte [] buf = new byte[2 * MAX_RECORD_LENGTH];
-        int [] x = new int[2];
+    private int seekCountry(long ipAddress) {
+        byte[] buf = new byte[2 * MAX_RECORD_LENGTH];
+        int[] x = new int[2];
         int offset = 0;
-        _check_mtime();
+        // _check_mtime();
         for (int depth = 31; depth >= 0; depth--) {
-            if ((dboptions & GEOIP_MEMORY_CACHE) == 1) {
-                //read from memory
-                for (int i = 0;i < 2 * MAX_RECORD_LENGTH;i++) {
-                    buf[i] = dbbuffer[(2 * recordLength * offset)+i];
-                }
-            } else if ((dboptions & GEOIP_INDEX_CACHE) != 0) {
-                //read from index cache
-                for (int i = 0;i < 2 * MAX_RECORD_LENGTH;i++) {
-                    buf[i] = index_cache[(2 * recordLength * offset)+i];
-                }            
-            } else {
-                //read from disk 
-                try {
-                    file.seek(2 * recordLength * offset);
-                    file.readFully(buf);
-                }
-                catch (IOException e) {
-                    System.out.println("IO Exception");
-                }
+
+            // read from memory
+            for (int i = 0; i < 2 * MAX_RECORD_LENGTH; i++) {
+                buf[i] = dbbuffer[(2 * recordLength * offset) + i];
             }
-            for (int i = 0; i<2; i++) {
+
+            for (int i = 0; i < 2; i++) {
                 x[i] = 0;
-                for (int j = 0; j<recordLength; j++) {
-                    int y = buf[i*recordLength+j];
+                for (int j = 0; j < recordLength; j++) {
+                    int y = buf[i * recordLength + j];
                     if (y < 0) {
-                        y+= 256;
+                        y += 256;
                     }
                     x[i] += (y << (j * 8));
                 }
@@ -1179,14 +1176,13 @@ public class FastLookupService {
 
             if ((ipAddress & (1 << depth)) > 0) {
                 if (x[1] >= databaseSegments[0]) {
-                    last_netmask = 32 - depth;
+                    // last_netmask = 32 - depth;
                     return x[1];
                 }
                 offset = x[1];
-            }
-            else {
+            } else {
                 if (x[0] >= databaseSegments[0]) {
-                    last_netmask = 32 - depth;
+                    // last_netmask = 32 - depth;
                     return x[0];
                 }
                 offset = x[0];
@@ -1216,7 +1212,49 @@ public class FastLookupService {
         return ipnum;
     }
 
+    /**
+     * Returns the long version of an IP address given as a String object.
+     *
+     * @param ip String
+     * @return long form of IP
+     */
+    private static long ipToLong(String ip) {
+        long num = 0;
+        long res = 0;
+        int pos = 0;
+        int a = 0;
+        char c;
+        long y;
+        for (int i = 0; i < ip.length(); i++) {
+            c = ip.charAt(i);
+            if (c == DOT) {
+                y = -res;
+                if (y < 0) {
+                    y+= 256;
+                }
+                num += y << ((3-a)*8);
+                pos = 0;
+                res = 0;
+                a++;
+                continue;
+            }
+            res *= 10;
+            res -= Character.digit(c, 10);
+            pos++;
+        }
+        if (a != 3) {
+            return 0;
+        }
+        y = -res;
+        if (y < 0) {
+            y+= 256;
+        }
+        num += y << ((3-a)*8);
+
+        return num;
+    }
+
     private static int unsignedByteToInt(byte b) {
-        return (int) b & 0xFF;
+        return b & 0xFF;
     }
 }
