@@ -15,4 +15,5 @@ define "geoip" do
   test.compile.with # Add classpath dependencies
   test.resources
   package(:jar)
+  package(:sources)
 end
