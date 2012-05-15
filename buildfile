@@ -1,4 +1,4 @@
-VERSION_NUMBER = "1.2.5-fast"
+VERSION_NUMBER = "1.2.6-fast"
 GROUP = "com.maxmind.geoip"
 COPYRIGHT = "MaxMind LLC"
 
