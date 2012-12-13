@@ -74,7 +74,7 @@ public class LookupService {
     /**
      * Database file.
      */
-    private RandomAccessFile file = null;
+    protected RandomAccessFile file = null;
     private File databaseFile = null;
 
     /**
@@ -119,7 +119,7 @@ public class LookupService {
     private final static int SEGMENT_RECORD_LENGTH = 3;
     private final static int STANDARD_RECORD_LENGTH = 3;
     private final static int ORG_RECORD_LENGTH = 4;
-    private final static int MAX_RECORD_LENGTH = 4;
+    protected final static int MAX_RECORD_LENGTH = 4;
 
     private final static int MAX_ORG_RECORD_LENGTH = 300;
     private final static int FULL_RECORD_LENGTH = 60;
@@ -1055,7 +1055,7 @@ public class LookupService {
      * @param addr the ip address to find in long format.
      * @return the country index.
      */
-    private synchronized int seekCountryV6(InetAddress addr) {
+    protected synchronized int seekCountryV6(InetAddress addr) {
         byte [] v6vec = addr.getAddress();
         byte [] buf = new byte[2 * MAX_RECORD_LENGTH];
         int [] x = new int[2];

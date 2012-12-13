@@ -3,6 +3,7 @@ package com.maxmind.geoip;
 import java.io.File;
 import java.io.IOException;
 import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 /**
@@ -76,6 +77,144 @@ public class FastLookupService extends LookupService {
     @Override
     public int last_netmask() {
         throw new RuntimeException("not implemented in FastLookupService");
+    }
+
+    @Override
+    void _check_mtime() {
+    }
+
+    /**
+     * Finds the country index value given an IPv6 address.
+     *
+     * @param addr the ip address to find in long format.
+     * @return the country index.
+     */
+    @Override
+    protected int seekCountryV6(InetAddress addr) {
+        byte [] v6vec = addr.getAddress();
+        byte [] buf = new byte[2 * MAX_RECORD_LENGTH];
+        int [] x = new int[2];
+        int offset = 0;
+        _check_mtime();
+        for (int depth = 127; depth >= 0; depth--) {
+            if ((dboptions & GEOIP_MEMORY_CACHE) == 1) {
+                //read from memory
+                for (int i = 0;i < 2 * MAX_RECORD_LENGTH;i++) {
+                    buf[i] = dbbuffer[(2 * recordLength * offset)+i];
+                }
+            } else if ((dboptions & GEOIP_INDEX_CACHE) != 0) {
+                //read from index cache
+                for (int i = 0;i < 2 * MAX_RECORD_LENGTH;i++) {
+                    buf[i] = index_cache[(2 * recordLength * offset)+i];
+                }
+            } else {
+                //read from disk
+                try {
+                    file.seek(2 * recordLength * offset);
+                    file.readFully(buf);
+                }
+                catch (IOException e) {
+                    System.out.println("IO Exception");
+                }
+            }
+            for (int i = 0; i<2; i++) {
+                x[i] = 0;
+                for (int j = 0; j<recordLength; j++) {
+                    int y = buf[i*recordLength+j];
+                    if (y < 0) {
+                        y+= 256;
+                    }
+                    x[i] += (y << (j * 8));
+                }
+            }
+
+            int bnum = 127 - depth;
+            int idx = bnum >> 3;
+                    int b_mask = 1 << ( bnum & 7 ^ 7 );
+                    if ((v6vec[idx] & b_mask) > 0) {
+                        if (x[1] >= databaseSegments[0]) {
+                            last_netmask = 128 - depth;
+                            return x[1];
+                        }
+                        offset = x[1];
+                    }
+                    else {
+                        if (x[0] >= databaseSegments[0]) {
+                            last_netmask = 128 - depth;
+                            return x[0];
+                        }
+                        offset = x[0];
+                    }
+        }
+
+        // shouldn't reach here
+        System.err.println("Error seeking country while seeking " + addr.getHostAddress() );
+        return 0;
+    }
+
+    /**
+     * Finds the country index value given an IP address.
+     *
+     * @param ipAddress the ip address to find in long format.
+     * @return the country index.
+     */
+    @Override
+    protected int seekCountry(long ipAddress) {
+        byte [] buf = new byte[2 * MAX_RECORD_LENGTH];
+        int [] x = new int[2];
+        int offset = 0;
+        _check_mtime();
+        for (int depth = 31; depth >= 0; depth--) {
+            if ((dboptions & GEOIP_MEMORY_CACHE) == 1) {
+                //read from memory
+                for (int i = 0;i < 2 * MAX_RECORD_LENGTH;i++) {
+                    buf[i] = dbbuffer[(2 * recordLength * offset)+i];
+                }
+            } else if ((dboptions & GEOIP_INDEX_CACHE) != 0) {
+                //read from index cache
+                for (int i = 0;i < 2 * MAX_RECORD_LENGTH;i++) {
+                    buf[i] = index_cache[(2 * recordLength * offset)+i];
+                }
+            } else {
+                //read from disk
+                try {
+                    file.seek(2 * recordLength * offset);
+                    file.readFully(buf);
+                }
+                catch (IOException e) {
+                    System.out.println("IO Exception");
+                }
+            }
+            for (int i = 0; i<2; i++) {
+                x[i] = 0;
+                for (int j = 0; j<recordLength; j++) {
+                    int y = buf[i*recordLength+j];
+                    if (y < 0) {
+                        y+= 256;
+                    }
+                    x[i] += (y << (j * 8));
+                }
+            }
+
+            if ((ipAddress & (1 << depth)) > 0) {
+                if (x[1] >= databaseSegments[0]) {
+                    last_netmask = 32 - depth;
+                    return x[1];
+                }
+                offset = x[1];
+            }
+            else {
+                if (x[0] >= databaseSegments[0]) {
+                    last_netmask = 32 - depth;
+                    return x[0];
+                }
+                offset = x[0];
+            }
+        }
+
+        // shouldn't reach here
+        System.err.println("Error seeking country while seeking " + ipAddress);
+        return 0;
     }
 
     /**
