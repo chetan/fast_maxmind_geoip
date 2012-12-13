@@ -599,7 +599,7 @@ public class FastLookupService {
                 if (t != mtime){
                     /* GeoIP Database file updated */
                     /* refresh filehandle */
-                    file.close();
+                    close();
                     file = new RandomAccessFile(databaseFile,"r");
                     databaseInfo = null;
                     init();
