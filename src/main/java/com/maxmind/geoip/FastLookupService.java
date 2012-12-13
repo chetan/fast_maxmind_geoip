@@ -2,7 +2,17 @@ package com.maxmind.geoip;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.Inet6Address;
+import java.net.UnknownHostException;
 
+/**
+ * A faster version of {@link LookupService}. Offers a single new method: getCountryCode()
+ *
+ * <p>NOTE: Retrieving the netmask is no longer support in this implementation and trying to do so
+ * will result in a {@link RuntimeException}.
+ * @author chetan
+ *
+ */
 public class FastLookupService extends LookupService {
 
     private static final String UNKNOWN_COUNTRY_CODE = "--";
@@ -37,14 +47,30 @@ public class FastLookupService extends LookupService {
     }
 
     /**
-     * Returns the country code the IP address is in.
+     * Returns the country code the IP address is in. Supports both IPv4 and IPv6 addresses.
+     *
+     * <p>Invalid IPs will return UNKNOWN_COUNTRY_CODE ("--") instead of throwing an exception.
      *
      * @param ipAddress String version of an IP address, i.e. "127.0.0.1"
      * @return the 2 letter country code
      */
     public String getCountryCode(String ipAddress) {
-        int ret = seekCountry(ipToLong(ipAddress)) - COUNTRY_BEGIN;
-        return (ret == 0 ? UNKNOWN_COUNTRY_CODE : countryCode[ret]);
+
+        if (ipAddress.charAt(0) == '[' || ipAddress.indexOf(':') >= 0) {
+            // ipv6
+            try {
+                return getCountryV6(Inet6Address.getByName(ipAddress)).getCode();
+            } catch (UnknownHostException e) {
+                return UNKNOWN_COUNTRY_CODE;
+            }
+
+        } else {
+            // ipv4
+            int ret = seekCountry(ipToLong(ipAddress)) - COUNTRY_BEGIN;
+            return (ret == 0 ? UNKNOWN_COUNTRY_CODE : countryCode[ret]);
+        }
+
+
     }
 
     @Override
