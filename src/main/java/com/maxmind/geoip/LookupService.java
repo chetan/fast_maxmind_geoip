@@ -23,8 +23,8 @@ package com.maxmind.geoip;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.net.InetAddress;
 import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -384,8 +384,8 @@ public class LookupService {
             index_cache = new byte[l];
             if (index_cache != null){
                 file.seek(0);
-                file.readFully(index_cache,0,l);     
-            }          
+                file.readFully(index_cache,0,l);
+            }
         } else {
             index_cache = null;
         }
@@ -510,7 +510,7 @@ public class LookupService {
     }
 
     public int last_netmask() {
-        return this.last_netmask; 
+        return this.last_netmask;
     }
 
     public void netmask(int nm){
@@ -653,7 +653,7 @@ public class LookupService {
         Location record = new Location();
         String key;
         String value;
-        StringTokenizer st = new StringTokenizer(str,";=\""); 
+        StringTokenizer st = new StringTokenizer(str,";=\"");
         while (st.hasMoreTokens()) {
             key = st.nextToken();
             if (st.hasMoreTokens()) {
@@ -1071,9 +1071,9 @@ public class LookupService {
                 //read from index cache
                 for (int i = 0;i < 2 * MAX_RECORD_LENGTH;i++) {
                     buf[i] = index_cache[(2 * recordLength * offset)+i];
-                }            
+                }
             } else {
-                //read from disk 
+                //read from disk
                 try {
                     file.seek(2 * recordLength * offset);
                     file.readFully(buf);
@@ -1137,9 +1137,9 @@ public class LookupService {
                 //read from index cache
                 for (int i = 0;i < 2 * MAX_RECORD_LENGTH;i++) {
                     buf[i] = index_cache[(2 * recordLength * offset)+i];
-                }            
+                }
             } else {
-                //read from disk 
+                //read from disk
                 try {
                     file.seek(2 * recordLength * offset);
                     file.readFully(buf);
@@ -1199,6 +1199,6 @@ public class LookupService {
     }
 
     private static int unsignedByteToInt(byte b) {
-        return (int) b & 0xFF;
+        return b & 0xFF;
     }
 }
