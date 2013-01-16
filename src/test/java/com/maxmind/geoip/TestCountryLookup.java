@@ -14,6 +14,8 @@ import org.junit.Test;
 
 public class TestCountryLookup extends TestCase {
 
+    String ipv6ip = "2a01:7e00::f03c:91ff:fedf:3a21";
+
     @Test
     public void testLookup() throws IOException, URISyntaxException {
 
@@ -77,13 +79,24 @@ public class TestCountryLookup extends TestCase {
         FastLookupService lookup = new FastLookupService(new File(dat.toURI()),
                 LookupService.GEOIP_MEMORY_CACHE);
 
-        String ip = "2a01:7e00::f03c:91ff:fedf:3a21";
-
-        String code = old.getCountryV6(ip).getCode();
-        String newCode = lookup.getCountryCode(ip);
-        assertEquals(code + " is expected for " + ip + ";", code, newCode);
+        String code = old.getCountryV6(ipv6ip).getCode();
+        String newCode = lookup.getCountryCode(ipv6ip);
+        assertEquals(code + " is expected for " + ipv6ip + ";", code, newCode);
         assertEquals("GB", newCode);
 
+    }
+
+    @Test
+    public void testGeoProxyLookup()  throws IOException, URISyntaxException {
+
+        URL datV4 = this.getClass().getClassLoader().getResource("GeoIP.dat");
+        URL datV6 = this.getClass().getClassLoader().getResource("GeoIPv6.dat");
+
+        GeoProxy proxy = new GeoProxy(new File(datV4.toURI()), new File(datV6.toURI()));
+
+        assertEquals("GB", proxy.getCountryCode(ipv6ip));
+        assertEquals("--", proxy.getCountryCode("127.0.0.1"));
+        assertEquals("US", proxy.getCountryCode("4.2.2.2"));
     }
 
 }

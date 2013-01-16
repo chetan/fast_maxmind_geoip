@@ -59,19 +59,26 @@ public class FastLookupService extends LookupService {
 
         if (ipAddress.charAt(0) == '[' || ipAddress.indexOf(':') >= 0) {
             // ipv6
-            try {
-                return getCountryV6(Inet6Address.getByName(ipAddress)).getCode();
-            } catch (UnknownHostException e) {
-                return UNKNOWN_COUNTRY_CODE;
-            }
+            return getCountryCodeV6(ipAddress);
 
         } else {
             // ipv4
-            int ret = seekCountry(ipToLong(ipAddress)) - COUNTRY_BEGIN;
-            return (ret == 0 ? UNKNOWN_COUNTRY_CODE : countryCode[ret]);
+            return getCountryCodeV4(ipAddress);
         }
 
+    }
 
+    public String getCountryCodeV6(String ipAddress) {
+        try {
+            return getCountryV6(Inet6Address.getByName(ipAddress)).getCode();
+        } catch (UnknownHostException e) {
+            return UNKNOWN_COUNTRY_CODE;
+        }
+    }
+
+    public String getCountryCodeV4(String ipAddress) {
+        int ret = seekCountry(ipToLong(ipAddress)) - COUNTRY_BEGIN;
+        return (ret == 0 ? UNKNOWN_COUNTRY_CODE : countryCode[ret]);
     }
 
     @Override

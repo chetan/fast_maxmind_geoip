@@ -15,16 +15,27 @@ public class GeoProxy {
     // one hour
     private static final long UPDATE_INTERVAL = 3600*1000;
 
-    private final File databaseFile;
-    private long loadTime;
+    private final File databaseFileV4;
+    private final File databaseFileV6;
+    private long loadTimeV4;
+    private long loadTimeV6;
 
-    private FastLookupService lookup;
+    private FastLookupService lookupV4;
+    private FastLookupService lookupV6;
 
     private final Thread thread;
 
-    public GeoProxy(File databaseFile) throws IOException {
-        this.databaseFile = databaseFile;
-        createService();
+    /**
+     * Create new GeoProxy service
+     *
+     * @param databaseFileV4
+     * @param databaseFileV6
+     * @throws IOException
+     */
+    public GeoProxy(File databaseFileV4, File databaseFileV6) throws IOException {
+        this.databaseFileV4 = databaseFileV4;
+        this.databaseFileV6 = databaseFileV6;
+        createServices();
         this.thread = new UpdateThread();
         this.thread.start();
     }
@@ -38,13 +49,23 @@ public class GeoProxy {
      * @return the 2 letter country code
      */
     public String getCountryCode(String ipAddress) {
-        return lookup.getCountryCode(ipAddress);
+        if (ipAddress.charAt(0) == '[' || ipAddress.indexOf(':') >= 0) {
+            // ipv6
+            return lookupV6.getCountryCodeV6(ipAddress);
+        } else {
+            // ipv4
+            return lookupV4.getCountryCodeV4(ipAddress);
+        }
     }
 
-    protected void createService() throws IOException {
-        FastLookupService service = new FastLookupService(databaseFile, LookupService.GEOIP_MEMORY_CACHE);
-        this.loadTime = databaseFile.lastModified();
-        this.lookup = service;
+    protected void createServices() throws IOException {
+        FastLookupService serviceV4 = new FastLookupService(databaseFileV4, LookupService.GEOIP_MEMORY_CACHE);
+        this.loadTimeV4 = databaseFileV4.lastModified();
+        this.lookupV4 = serviceV4;
+
+        FastLookupService serviceV6 = new FastLookupService(databaseFileV6, LookupService.GEOIP_MEMORY_CACHE);
+        this.loadTimeV6 = databaseFileV6.lastModified();
+        this.lookupV6 = serviceV6;
     }
 
     private class UpdateThread extends Thread {
@@ -57,11 +78,13 @@ public class GeoProxy {
                     return;
                 }
 
-                if (databaseFile.lastModified() <= loadTime) {
+                if (databaseFileV4.lastModified() <= loadTimeV4 ||
+                        databaseFileV6.lastModified() <= loadTimeV6) {
+
                     continue; // don't update
                 }
                 try {
-                    createService();
+                    createServices();
                 } catch (IOException e) {
                     // creating new service failed, just wait for next interval
                 }
