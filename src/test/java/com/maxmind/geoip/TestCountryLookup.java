@@ -69,7 +69,7 @@ public class TestCountryLookup extends TestCase {
     @Test
     public void testIPV6Lookup() throws IOException, URISyntaxException {
 
-        URL dat = this.getClass().getClassLoader().getResource("GeoIP.dat");
+        URL dat = this.getClass().getClassLoader().getResource("GeoIPv6.dat");
 
         LookupService old = new LookupService(new File(dat.toURI()),
                 LookupService.GEOIP_MEMORY_CACHE);
@@ -82,6 +82,7 @@ public class TestCountryLookup extends TestCase {
         String code = old.getCountryV6(ip).getCode();
         String newCode = lookup.getCountryCode(ip);
         assertEquals(code + " is expected for " + ip + ";", code, newCode);
+        assertEquals("GB", newCode);
 
     }
 
