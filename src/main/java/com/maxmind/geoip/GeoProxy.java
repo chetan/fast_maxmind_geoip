@@ -7,6 +7,11 @@ import java.io.IOException;
  * Simple proxy for {@link FastLookupService} which uses a background thread to check for an
  * updated database file at one hour increments.
  *
+ * It also supports using separate database files for IPv4 and IPv6 lookups. This is because the
+ * binary non-free db does not currently support IPv6. For more info:
+ *
+ * http://www.maxmind.com/en/ipv6
+ *
  * @author chetan
  *
  */
